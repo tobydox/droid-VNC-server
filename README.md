@@ -1,7 +1,15 @@
-# droid-VNC-server
+# droid-vnc-server
 
-A fork of droid-VNC-server used at Appknox
+VNC server for Android, tested working with Jelly Bean till Marshmallow
 
-## Building
+## Getting started
 
-    bash vnc-build.sh
+Make sure Android SDK and NDK are installed
+
+    bash build.sh -wa API_LEVEL
+
+Specify API level with `-a`
+
+Use `-w` flag to build the wrapper libs; AOSP source is required at `../aosp`
+
+Wrapper libs for API 19 to 25 have been prebuilt in [](nativeMethods/libs/armeabi-v7a/) and should work out of the box
