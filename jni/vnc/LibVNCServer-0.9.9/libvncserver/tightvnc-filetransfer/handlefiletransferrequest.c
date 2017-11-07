@@ -22,13 +22,18 @@
  * Date		: 14th July 2005
  */
  
+#ifndef _MSC_VER
 #include <pwd.h>
+#endif /* _MSC_VER */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifndef _MSC_VER
 #include <dirent.h>
 #include <pthread.h>
+#endif /* _MSC_VER */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <limits.h>
@@ -698,7 +703,7 @@ HandleFileUploadLengthError(rfbClientPtr cl, short fNameSize)
 	    return;
 	}
 
-	rfbLog("File [%s]: Method [%s]: File Upload Length Error occured"
+	rfbLog("File [%s]: Method [%s]: File Upload Length Error occurred"
 			"file path requested is <%s>\n", __FILE__, __FUNCTION__, path);
 
     if(path != NULL) {

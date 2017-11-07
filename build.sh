@@ -19,7 +19,7 @@ clean() {
 }
 
 build_wrapper() {
-    cd ../aosp
+    cd /Volumes/android
 
     source build/envsetup.sh
     lunch aosp_arm-eng
