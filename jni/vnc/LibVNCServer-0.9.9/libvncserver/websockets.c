@@ -26,30 +26,39 @@
  *  USA.
  */
 
+#ifdef __STRICT_ANSI__
+#define _BSD_SOURCE
+#endif
+
 #include <rfb/rfb.h>
-#include <resolv.h> /* __b64_ntop */
 /* errno */
 #include <errno.h>
 
-#include <byteswap.h>
+#ifndef _MSC_VER
+#include <resolv.h> /* __b64_ntop */
+#endif
+
+#ifdef LIBVNCSERVER_HAVE_ENDIAN_H
+#include <endian.h>
+#elif LIBVNCSERVER_HAVE_SYS_ENDIAN_H
+#include <sys/endian.h>
+#endif
+
+#ifdef LIBVNCSERVER_HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #include <string.h>
-#include "rfbconfig.h"
+#include <unistd.h>
+#include "rfb/rfbconfig.h"
 #include "rfbssl.h"
 #include "rfbcrypto.h"
 
-#if defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) && __BYTE_ORDER == __BIG_ENDIAN
-#define WS_NTOH64(n) (n)
-#define WS_NTOH32(n) (n)
-#define WS_NTOH16(n) (n)
-#define WS_HTON64(n) (n)
-#define WS_HTON16(n) (n)
-#else
-#define WS_NTOH64(n) bswap_64(n)
-#define WS_NTOH32(n) bswap_32(n)
-#define WS_NTOH16(n) bswap_16(n)
-#define WS_HTON64(n) bswap_64(n)
-#define WS_HTON16(n) bswap_16(n)
-#endif
+#define WS_NTOH64(n) htobe64(n)
+#define WS_NTOH32(n) htobe32(n)
+#define WS_NTOH16(n) htobe16(n)
+#define WS_HTON64(n) htobe64(n)
+#define WS_HTON16(n) htobe16(n)
 
 #define B64LEN(__x) (((__x + 2) / 3) * 12 / 3)
 #define WSHLENMAX 14  /* 2 + sizeof(uint64_t) + sizeof(uint32_t) */
@@ -70,8 +79,9 @@ typedef int (*wsEncodeFunc)(rfbClientPtr cl, const char *src, int len, char **ds
 typedef int (*wsDecodeFunc)(rfbClientPtr cl, char *dst, int len);
 
 typedef struct ws_ctx_s {
-    char codeBuf[B64LEN(UPDATE_BUF_SIZE) + WSHLENMAX]; /* base64 + maximum frame header length */
-    char readbuf[8192];
+    char codeBufDecode[B64LEN(UPDATE_BUF_SIZE) + WSHLENMAX]; /* base64 + maximum frame header length */
+	char codeBufEncode[B64LEN(UPDATE_BUF_SIZE) + WSHLENMAX]; /* base64 + maximum frame header length */
+	char readbuf[8192];
     int readbufstart;
     int readbuflen;
     int dblen;
@@ -88,6 +98,11 @@ typedef union ws_mask_s {
   uint32_t u;
 } ws_mask_t;
 
+/* XXX: The union and the structs do not need to be named.
+ *      We are working around a bug present in GCC < 4.6 which prevented
+ *      it from recognizing anonymous structs and unions.
+ *      See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=4784
+ */
 typedef struct __attribute__ ((__packed__)) ws_header_s {
   unsigned char b0;
   unsigned char b1;
@@ -95,13 +110,13 @@ typedef struct __attribute__ ((__packed__)) ws_header_s {
     struct __attribute__ ((__packed__)) {
       uint16_t l16;
       ws_mask_t m16;
-    };
+    } s16;
     struct __attribute__ ((__packed__)) {
       uint64_t l64;
       ws_mask_t m64;
-    };
+    } s64;
     ws_mask_t m;
-  };
+  } u;
 } ws_header_t;
 
 enum
@@ -138,6 +153,11 @@ Sec-WebSocket-Accept: %s\r\n\
 Sec-WebSocket-Protocol: %s\r\n\
 \r\n"
 
+#define SERVER_HANDSHAKE_HYBI_NO_PROTOCOL "HTTP/1.1 101 Switching Protocols\r\n\
+Upgrade: websocket\r\n\
+Connection: Upgrade\r\n\
+Sec-WebSocket-Accept: %s\r\n\
+\r\n"
 
 #define WEBSOCKETS_CLIENT_CONNECT_WAIT_MS 100
 #define WEBSOCKETS_CLIENT_SEND_WAIT_MS 100
@@ -375,8 +395,12 @@ webSocketsHandshake(rfbClientPtr cl, char *scheme)
 	char accept[B64LEN(SHA1_HASH_SIZE) + 1];
 	rfbLog("  - WebSockets client version hybi-%02d\n", sec_ws_version);
 	webSocketsGenSha1Key(accept, sizeof(accept), sec_ws_key);
-	len = snprintf(response, WEBSOCKETS_MAX_HANDSHAKE_LEN,
-		 SERVER_HANDSHAKE_HYBI, accept, protocol);
+        if(strlen(protocol) > 0)
+            len = snprintf(response, WEBSOCKETS_MAX_HANDSHAKE_LEN,
+	                   SERVER_HANDSHAKE_HYBI, accept, protocol);
+        else
+            len = snprintf(response, WEBSOCKETS_MAX_HANDSHAKE_LEN,
+                           SERVER_HANDSHAKE_HYBI_NO_PROTOCOL, accept);
     } else {
 	/* older hixie handshake, this could be removed if
 	 * a final standard is established */
@@ -476,15 +500,15 @@ webSocketsEncodeHixie(rfbClientPtr cl, const char *src, int len, char **dst)
     int sz = 0;
     ws_ctx_t *wsctx = (ws_ctx_t *)cl->wsctx;
 
-    wsctx->codeBuf[sz++] = '\x00';
-    len = __b64_ntop((unsigned char *)src, len, wsctx->codeBuf+sz, sizeof(wsctx->codeBuf) - (sz + 1));
+    wsctx->codeBufEncode[sz++] = '\x00';
+    len = __b64_ntop((unsigned char *)src, len, wsctx->codeBufEncode+sz, sizeof(wsctx->codeBufEncode) - (sz + 1));
     if (len < 0) {
         return len;
     }
     sz += len;
 
-    wsctx->codeBuf[sz++] = '\xff';
-    *dst = wsctx->codeBuf;
+    wsctx->codeBufEncode[sz++] = '\xff';
+    *dst = wsctx->codeBufEncode;
     return sz;
 }
 
@@ -522,7 +546,7 @@ webSocketsDecodeHixie(rfbClientPtr cl, char *dst, int len)
     char *buf, *end = NULL;
     ws_ctx_t *wsctx = (ws_ctx_t *)cl->wsctx;
 
-    buf = wsctx->codeBuf;
+    buf = wsctx->codeBufDecode;
 
     n = ws_peek(cl, buf, len*2+2);
 
@@ -625,7 +649,7 @@ webSocketsDecodeHybi(rfbClientPtr cl, char *dst, int len)
     int flength, fhlen;
     /* int fin; */ /* not used atm */ 
 
-    // rfbLog(" <== %s[%d]: %d cl: %p, wsctx: %p-%p (%d)\n", __func__, gettid(), len, cl, wsctx, (char *)wsctx + sizeof(ws_ctx_t), sizeof(ws_ctx_t));
+    /* rfbLog(" <== %s[%d]: %d cl: %p, wsctx: %p-%p (%d)\n", __func__, gettid(), len, cl, wsctx, (char *)wsctx + sizeof(ws_ctx_t), sizeof(ws_ctx_t)); */
 
     if (wsctx->readbuflen) {
       /* simply return what we have */
@@ -643,8 +667,8 @@ webSocketsDecodeHybi(rfbClientPtr cl, char *dst, int len)
       goto spor;
     }
 
-    buf = wsctx->codeBuf;
-    header = (ws_header_t *)wsctx->codeBuf;
+    buf = wsctx->codeBufDecode;
+    header = (ws_header_t *)wsctx->codeBufDecode;
 
     ret = ws_peek(cl, buf, B64LEN(len) + WSHLENMAX);
 
@@ -680,15 +704,15 @@ webSocketsDecodeHybi(rfbClientPtr cl, char *dst, int len)
 
     if (flength < 126) {
 	fhlen = 2;
-	mask = header->m;
+	mask = header->u.m;
     } else if (flength == 126 && 4 <= ret) {
-	flength = WS_NTOH16(header->l16);
+	flength = WS_NTOH16(header->u.s16.l16);
 	fhlen = 4;
-	mask = header->m16;
+	mask = header->u.s16.m16;
     } else if (flength == 127 && 10 <= ret) {
-	flength = WS_NTOH64(header->l64);
+	flength = WS_NTOH64(header->u.s64.l64);
 	fhlen = 10;
-	mask = header->m64;
+	mask = header->u.s64.m64;
     } else {
       /* Incomplete frame header */
       rfbErr("%s: incomplete frame header\n", __func__, ret);
@@ -728,11 +752,11 @@ webSocketsDecodeHybi(rfbClientPtr cl, char *dst, int len)
 	errno = ECONNRESET;
 	break;
       case WS_OPCODE_TEXT_FRAME:
-	if (-1 == (flength = __b64_pton(payload, (unsigned char *)wsctx->codeBuf, sizeof(wsctx->codeBuf)))) {
+	if (-1 == (flength = __b64_pton(payload, (unsigned char *)wsctx->codeBufDecode, sizeof(wsctx->codeBufDecode)))) {
 	  rfbErr("%s: Base64 decode error; %m\n", __func__);
 	  break;
 	}
-	payload = wsctx->codeBuf;
+	payload = wsctx->codeBufDecode;
 	/* fall through */
       case WS_OPCODE_BINARY_FRAME:
 	if (flength > len) {
@@ -776,13 +800,14 @@ webSocketsEncodeHybi(rfbClientPtr cl, const char *src, int len, char **dst)
 	  return 0;
     }
 
-    header = (ws_header_t *)wsctx->codeBuf;
+    header = (ws_header_t *)wsctx->codeBufEncode;
 
     if (wsctx->base64) {
 	opcode = WS_OPCODE_TEXT_FRAME;
 	/* calculate the resulting size */
 	blen = B64LEN(len);
     } else {
+	opcode = WS_OPCODE_BINARY_FRAME;
 	blen = len;
     }
 
@@ -792,16 +817,16 @@ webSocketsEncodeHybi(rfbClientPtr cl, const char *src, int len, char **dst)
       sz = 2;
     } else if (blen <= 65536) {
       header->b1 = 0x7e;
-      header->l16 = WS_HTON16((uint16_t)blen);
+      header->u.s16.l16 = WS_HTON16((uint16_t)blen);
       sz = 4;
     } else {
       header->b1 = 0x7f;
-      header->l64 = WS_HTON64(blen);
+      header->u.s64.l64 = WS_HTON64(blen);
       sz = 10;
     }
 
     if (wsctx->base64) {
-        if (-1 == (ret = __b64_ntop((unsigned char *)src, len, wsctx->codeBuf + sz, sizeof(wsctx->codeBuf) - sz))) {
+        if (-1 == (ret = __b64_ntop((unsigned char *)src, len, wsctx->codeBufEncode + sz, sizeof(wsctx->codeBufEncode) - sz))) {
 	  rfbErr("%s: Base 64 encode failed\n", __func__);
 	} else {
 	  if (ret != blen)
@@ -809,11 +834,12 @@ webSocketsEncodeHybi(rfbClientPtr cl, const char *src, int len, char **dst)
 	  ret += sz;
 	}
     } else {
-      memcpy(wsctx->codeBuf + sz, src, len);
+      memcpy(wsctx->codeBufEncode + sz, src, len);
       ret =  sz + len;
     }
 
-    *dst = wsctx->codeBuf;
+    *dst = wsctx->codeBufEncode;
+
     return ret;
 }
 
@@ -890,3 +916,16 @@ webSocketCheckDisconnect(rfbClientPtr cl)
     return FALSE;
 }
 
+/* returns TRUE if there is data waiting to be read in our internal buffer
+ * or if is there any pending data in the buffer of the SSL implementation
+ */
+rfbBool
+webSocketsHasDataInBuffer(rfbClientPtr cl)
+{
+    ws_ctx_t *wsctx = (ws_ctx_t *)cl->wsctx;
+
+    if (wsctx && wsctx->readbuflen)
+      return TRUE;
+
+    return (cl->sslctx && rfbssl_pending(cl) > 0);
+}

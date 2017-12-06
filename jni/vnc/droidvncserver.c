@@ -350,41 +350,41 @@ void initGrabberMethod()
 		initFlinger();
 }
 
-rfbClientPtr createRepeaterClient()
-{
-	rfbClientPtr cl;
-
-	L("Checking if repeater host set.\n");
-	if (strlen(repeaterHost) > 0)
-	{
-		L("Repeater host was set.\n");
-		char idString[250];
-		char pv[12];
-
-		cl = rfbRepeaterConnection(vncscr, repeaterHost, repeaterPort, repeaterID);
-
-		if (cl)
-		{
-			L("rfbRepeaterConnection Successful.\n");
-			RepeaterGone == FALSE;
-			cl->onHold = FALSE;
-			rfbStartOnHoldClient(cl);
-		}
-		else
-		{
-			char *str=malloc(255*sizeof(char));
-			sprintf(str,"~SHOW|Couldn't connect to repeater host:\n%s\n",repeaterHost);
-			RepeaterGone = TRUE;
-			L("Couldn't connect to remote host: %s\n",repeaterHost);
-			sendMsgToGui(str);
-			free(str);
-		}
-	}
-	else
-		L("No repeater host was set.\n");
-
-	return cl;
-}
+// rfbClientPtr createRepeaterClient()
+// {
+// 	rfbClientPtr cl;
+//
+// 	L("Checking if repeater host set.\n");
+// 	if (strlen(repeaterHost) > 0)
+// 	{
+// 		L("Repeater host was set.\n");
+// 		char idString[250];
+// 		char pv[12];
+//
+// 		cl = rfbRepeaterConnection(vncscr, repeaterHost, repeaterPort, repeaterID);
+//
+// 		if (cl)
+// 		{
+// 			L("rfbRepeaterConnection Successful.\n");
+// 			RepeaterGone == FALSE;
+// 			cl->onHold = FALSE;
+// 			rfbStartOnHoldClient(cl);
+// 		}
+// 		else
+// 		{
+// 			char *str=malloc(255*sizeof(char));
+// 			sprintf(str,"~SHOW|Couldn't connect to repeater host:\n%s\n",repeaterHost);
+// 			RepeaterGone = TRUE;
+// 			L("Couldn't connect to remote host: %s\n",repeaterHost);
+// 			sendMsgToGui(str);
+// 			free(str);
+// 		}
+// 	}
+// 	else
+// 		L("No repeater host was set.\n");
+//
+// 	return cl;
+// }
 
 void printUsage(char **argv)
 {
@@ -397,7 +397,7 @@ void printUsage(char **argv)
 		"-r <rotation>\t- Screen rotation (degrees) (0,90,180,270)\n"
 		"-R <host:port>\t- Host for reverse connection\n"
 		"-s <scale>\t- Scale percentage (20,30,50,100,150)\n"
-		"-z\t\t- Rotate display 180º (for zte compatibility)\n"
+		"-z\t\t- Rotate display 180ï¿½ (for zte compatibility)\n"
 		"-U <host:port>\t- UltraVNC Repeater host and port\n"
 		"-S <id>\t\t- UltraVNC Repeater Numerical Server ID for MODE 2\n"
 		"-v\t\t- Output version\n"
@@ -542,22 +542,22 @@ int main(int argc, char **argv)
 
 	rfbClientPtr repeater = NULL;
 
-	if (repeaterHost != NULL)
-		repeater = createRepeaterClient();
+	// if (repeaterHost != NULL)
+	// 	repeater = createRepeaterClient();
 
 	while (1) {
 		usec=(vncscr->deferUpdateTime+standby)*1000;
 		clock_t start = clock();
-		if (repeaterHost != NULL)
-		{
-			//L("Checking if connection to repeater needs to be reestablished.\n");
-			if (RepeaterGone == TRUE)
-			{
-				L("Repeater connection needs to be reestablished.\n");
-				RepeaterGone = FALSE;
-				repeater = createRepeaterClient();
-			}
-		}
+		// if (repeaterHost != NULL)
+		// {
+		// 	//L("Checking if connection to repeater needs to be reestablished.\n");
+		// 	if (RepeaterGone == TRUE)
+		// 	{
+		// 		L("Repeater connection needs to be reestablished.\n");
+		// 		RepeaterGone = FALSE;
+		// 		repeater = createRepeaterClient();
+		// 	}
+		// }
 
 		rfbProcessEvents(vncscr,usec);
 
@@ -572,21 +572,21 @@ int main(int argc, char **argv)
 			standby=50;
 			continue;
 		}
-		else
-		{
-			if (repeaterHost != NULL)
-			{
-				if (RepeaterGone == FALSE)
-				{
-					if (repeater->protocolMajorVersion == 0)
-					{
-						idle=1;
-						standby=50;
-						continue;
-					}
-				}
-			}
-		}
+		// else
+		// {
+		// 	if (repeaterHost != NULL)
+		// 	{
+		// 		if (RepeaterGone == FALSE)
+		// 		{
+		// 			if (repeater->protocolMajorVersion == 0)
+		// 			{
+		// 				idle=1;
+		// 				standby=50;
+		// 				continue;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		rfbClientPtr client_ptr;
 

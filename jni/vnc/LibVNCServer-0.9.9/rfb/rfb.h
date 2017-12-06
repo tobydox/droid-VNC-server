@@ -52,7 +52,7 @@ extern "C"
 #include <sys/types.h>
 #endif
 
-#ifdef __MINGW32__
+#ifdef WIN32
 #undef SOCKET
 #include <winsock2.h>
 #ifdef LIBVNCSERVER_HAVE_WS2TCPIP_H
@@ -267,7 +267,7 @@ typedef struct _rfbScreenInfo
     SOCKET listenSock;
     int maxSock;
     int maxFd;
-#ifdef __MINGW32__
+#ifdef WIN32
     struct fd_set allFds;
 #else
     fd_set allFds;
@@ -457,9 +457,7 @@ typedef struct _rfbClientRec {
      */
     void* clientData;
     ClientGoneHookPtr clientGoneHook;
-	
-	rfbBool isRepeater;
-	
+
     SOCKET sock;
     char *host;
 
@@ -479,7 +477,7 @@ typedef struct _rfbClientRec {
        authentication.  If the right conditions are met this state will be
        set (see the auth.c file) when rfbProcessClientInitMessage is called.
 
-       If the state is RFB_INITIALISATION_SHARED we should not expect to recieve
+       If the state is RFB_INITIALISATION_SHARED we should not expect to receive
        any ClientInit message, but instead should proceed to the next stage
        of initialisation as though an implicit ClientInit message was received
        with a shared-flag of true.  (There is currently no corresponding
@@ -499,7 +497,7 @@ typedef struct _rfbClientRec {
                                 /** Possible client states: */
     enum {
         RFB_PROTOCOL_VERSION,   /**< establishing protocol version */
-		RFB_SECURITY_TYPE,      /**< negotiating security (RFB v.3.7) */
+	RFB_SECURITY_TYPE,      /**< negotiating security (RFB v.3.7) */
         RFB_AUTHENTICATION,     /**< authenticating */
         RFB_INITIALISATION,     /**< sending initialisation messages */
         RFB_NORMAL,             /**< normal protocol messages */
@@ -688,7 +686,7 @@ typedef struct _rfbClientRec {
 #ifdef LIBVNCSERVER_HAVE_LIBJPEG
     /* TurboVNC Encoding support (extends TightVNC) */
     int turboSubsampLevel;
-    int turboQualityLevel;  // 1-100 scale
+    int turboQualityLevel;  /* 1-100 scale */
 #endif
 #endif
 
@@ -722,15 +720,13 @@ typedef struct _rfbClientRec {
 #define Swap24(l) ((((l) & 0xff) << 16) | (((l) >> 16) & 0xff) | \
                    (((l) & 0x00ff00)))
 
-#define Swap32(l) (((l) >> 24) | \
+#define Swap32(l) ((((l) >> 24) & 0x000000ff)| \
                    (((l) & 0x00ff0000) >> 8)  | \
                    (((l) & 0x0000ff00) << 8)  | \
-                   ((l) << 24))
+                   (((l) & 0x000000ff) << 24))
 
 
 extern char rfbEndianTest;
-
-extern rfbBool RepeaterGone;
 
 #define Swap16IfLE(s) (rfbEndianTest ? Swap16(s) : (s))
 #define Swap24IfLE(l) (rfbEndianTest ? Swap24(l) : (l))
@@ -769,6 +765,7 @@ extern rfbBool webSocketsCheck(rfbClientPtr cl);
 extern rfbBool webSocketCheckDisconnect(rfbClientPtr cl);
 extern int webSocketsEncode(rfbClientPtr cl, const char *src, int len, char **dst);
 extern int webSocketsDecode(rfbClientPtr cl, char *dst, int len);
+extern rfbBool webSocketsHasDataInBuffer(rfbClientPtr cl);
 #endif
 
 /* rfbserver.c */
@@ -786,10 +783,8 @@ extern void rfbDecrClientRef(rfbClientPtr cl);
 
 extern void rfbNewClientConnection(rfbScreenInfoPtr rfbScreen,int sock);
 extern rfbClientPtr rfbNewClient(rfbScreenInfoPtr rfbScreen,int sock);
-extern rfbClientPtr rfbNewRepeaterClient(rfbScreenInfoPtr rfbScreen,int sock,char *server_id);
 extern rfbClientPtr rfbNewUDPClient(rfbScreenInfoPtr rfbScreen);
 extern rfbClientPtr rfbReverseConnection(rfbScreenInfoPtr rfbScreen,char *host, int port);
-extern rfbClientPtr rfbRepeaterConnection(rfbScreenInfoPtr rfbScreen,char *host, int port,char *server_id);
 extern void rfbClientConnectionGone(rfbClientPtr cl);
 extern void rfbProcessClientMessage(rfbClientPtr cl);
 extern void rfbClientConnFailed(rfbClientPtr cl, const char *reason);
@@ -1258,14 +1253,14 @@ rfbBool rfbUpdateClient(rfbClientPtr cl);
  Try example.c: it outputs on which port it listens (default: 5900), so it is
  display 0. To view, call @code	vncviewer :0 @endcode
  You should see a sheet with a gradient and "Hello World!" written on it. Try
- to paint something. Note that everytime you click, there is some bigger blot,
+ to paint something. Note that every time you click, there is some bigger blot,
  whereas when you drag the mouse while clicked you draw a line. The size of the
  blot depends on the mouse button you click. Open a second vncviewer with
  the same parameters and watch it as you paint in the other window. This also
  works over internet. You just have to know either the name or the IP of your
  machine. Then it is @code vncviewer machine.where.example.runs.com:0 @endcode
  or similar for the remote client. Now you are ready to type something. Be sure
- that your mouse sits still, because everytime the mouse moves, the cursor is
+ that your mouse sits still, because every time the mouse moves, the cursor is
  reset to the position of the pointer! If you are done with that demo, press
  the down or up arrows. If your viewer supports it, then the dimensions of the
  sheet change. Just press Escape in the viewer. Note that the server still

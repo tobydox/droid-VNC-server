@@ -9,6 +9,9 @@
 /* work around when write() returns ENOENT but does not mean it */
 #cmakedefine LIBVNCSERVER_ENOENT_WORKAROUND 1
 
+/* Define to 1 if you have the <endian.h> header file. */
+#cmakedefine LIBVNCSERVER_HAVE_ENDIAN_H 1
+
 /* Define to 1 if you have the <fcntl.h> header file. */
 #cmakedefine LIBVNCSERVER_HAVE_FCNTL_H  1 
 
@@ -30,6 +33,9 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #cmakedefine LIBVNCSERVER_HAVE_NETINET_IN_H  1 
 
+/* Define to 1 if you have the <sys/endian.h> header file. */
+#cmakedefine LIBVNCSERVER_HAVE_SYS_ENDIAN_H 1
+
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #cmakedefine LIBVNCSERVER_HAVE_SYS_SOCKET_H  1 
 
@@ -48,6 +54,27 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine LIBVNCSERVER_HAVE_UNISTD_H  1 
 
+/* Define to 1 if you have the `vfork' function. */
+#cmakedefine LIBVNCSERVER_HAVE_VFORK  1 
+
+/* Define to 1 if you have the <vfork.h> header file. */
+#cmakedefine LIBVNCSERVER_HAVE_VFORK_H  1 
+
+/* Define to 1 if you have the `vprintf' function. */
+#cmakedefine LIBVNCSERVER_HAVE_VPRINTF  1 
+
+/* Define to 1 if `fork' works. */
+#cmakedefine LIBVNCSERVER_HAVE_WORKING_FORK  1 
+
+/* Define to 1 if `vfork' works. */
+#cmakedefine LIBVNCSERVER_HAVE_WORKING_VFORK  1 
+
+/* Define to 1 if you have the <ws2tcpip.h> header file. */
+#cmakedefine LIBVNCSERVER_HAVE_WS2TCPIP_H  1 
+
+/* Enable IPv6 support */
+#cmakedefine LIBVNCSERVER_IPv6  1 
+
 /* Need a typedef for in_addr_t */
 #cmakedefine LIBVNCSERVER_NEED_INADDR_T 1
 
@@ -56,6 +83,10 @@
 
 /* Define to the version of this package. */
 #define LIBVNCSERVER_PACKAGE_VERSION  "@PACKAGE_VERSION@"
+#define LIBVNCSERVER_VERSION "@PACKAGE_VERSION@"
+#define LIBVNCSERVER_VERSION_MAJOR "@VERSION_MAJOR@"
+#define LIBVNCSERVER_VERSION_MINOR "@VERSION_MINOR@"
+#define LIBVNCSERVER_VERSION_PATCHLEVEL "@VERSION_PATCHLEVEL@"
 
 /* Define to 1 if libgcrypt is present */
 #cmakedefine LIBVNCSERVER_WITH_CLIENT_GCRYPT 1
@@ -71,13 +102,13 @@
 #cmakedefine LIBVNCSERVER_WORDS_BIGENDIAN 1
 
 /* Define to empty if `const' does not conform to ANSI C. */
-//#cmakedefine const @CMAKE_CONST@
+/* #cmakedefine const @CMAKE_CONST@ */
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
-//#ifndef __cplusplus
-//#cmakedefine inline @CMAKE_INLINE@
-//#endif
+/* #ifndef __cplusplus */
+/* #cmakedefine inline @CMAKE_INLINE@ */
+/* #endif */
 
 /* Define to `int' if <sys/types.h> does not define. */
 #cmakedefine HAVE_LIBVNCSERVER_PID_T 1

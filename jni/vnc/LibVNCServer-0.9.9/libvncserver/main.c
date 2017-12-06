@@ -550,7 +550,15 @@ clientInput(void *data)
             rfbSendFileTransferChunk(cl);
 
         if (FD_ISSET(cl->sock, &rfds) || FD_ISSET(cl->sock, &efds))
+        {
+#ifdef LIBVNCSERVER_WITH_WEBSOCKETS
+            do {
+                rfbProcessClientMessage(cl);
+            } while (webSocketsHasDataInBuffer(cl));
+#else
             rfbProcessClientMessage(cl);
+#endif
+        }
     }
 
     /* Get rid of the output thread. */
@@ -574,7 +582,7 @@ listenerRun(void *data)
     socklen_t len;
     fd_set listen_fds;  /* temp file descriptor list for select() */
 
-    /* TODO: this thread wont die by restarting the server */
+    /* TODO: this thread won't die by restarting the server */
     /* TODO: HTTP is not handled */
     while (1) {
         client_fd = -1;
@@ -604,21 +612,18 @@ listenerRun(void *data)
     return(NULL);
 }
 
-void 
-rfbStartOnHoldClient(rfbClientPtr cl)
-{
-    pthread_create(&cl->client_thread, NULL, clientInput, (void *)cl);
-}
-
-#else
-
-void 
-rfbStartOnHoldClient(rfbClientPtr cl)
-{
-	cl->onHold = FALSE;
-}
-
 #endif
+
+void 
+rfbStartOnHoldClient(rfbClientPtr cl)
+{
+    cl->onHold = FALSE;
+#ifdef LIBVNCSERVER_HAVE_LIBPTHREAD
+    if(cl->screen->backgroundLoop)
+	pthread_create(&cl->client_thread, NULL, clientInput, (void *)cl);
+#endif
+}
+
 
 void 
 rfbRefuseOnHoldClient(rfbClientPtr cl)
@@ -1051,7 +1056,7 @@ void rfbInitServer(rfbScreenInfoPtr screen)
 #endif
   rfbInitSockets(screen);
   rfbHttpInitSockets(screen);
-#ifndef __MINGW32__
+#ifndef WIN32
   if(screen->ignoreSIGPIPE)
     signal(SIGPIPE,SIG_IGN);
 #endif
@@ -1061,10 +1066,13 @@ void rfbShutdownServer(rfbScreenInfoPtr screen,rfbBool disconnectClients) {
   if(disconnectClients) {
     rfbClientPtr cl;
     rfbClientIteratorPtr iter = rfbGetClientIterator(screen);
-    while( (cl = rfbClientIteratorNext(iter)) )
-      if (cl->sock > -1)
-	/* we don't care about maxfd here, because the server goes away */
-	rfbCloseClient(cl);
+    while( (cl = rfbClientIteratorNext(iter)) ) {
+      if (cl->sock > -1) {
+       /* we don't care about maxfd here, because the server goes away */
+       rfbCloseClient(cl);
+       rfbClientConnectionGone(cl);
+      }
+    }
     rfbReleaseClientIterator(iter);
   }
 

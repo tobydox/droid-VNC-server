@@ -81,10 +81,10 @@ typedef struct TIGHT_CONF_s {
 } TIGHT_CONF;
 
 static TIGHT_CONF tightConf[4] = {
-    { 65536, 2048,   6, 0, 0, 0,   4, 24 }, // 0  (used only without JPEG)
-    { 65536, 2048,  32, 1, 1, 1,  96, 24 }, // 1
-    { 65536, 2048,  32, 3, 3, 2,  96, 96 }, // 2  (used only with JPEG)
-    { 65536, 2048,  32, 7, 7, 5,  96, 256 } // 9
+    { 65536, 2048,   6, 0, 0, 0,   4, 24 }, /* 0  (used only without JPEG) */
+    { 65536, 2048,  32, 1, 1, 1,  96, 24 }, /* 1 */
+    { 65536, 2048,  32, 3, 3, 2,  96, 96 }, /* 2  (used only with JPEG) */
+    { 65536, 2048,  32, 7, 7, 5,  96, 256 } /* 9 */
 };
 
 #ifdef LIBVNCSERVER_HAVE_LIBPNG
@@ -163,7 +163,11 @@ void rfbTightCleanup (rfbScreenInfoPtr screen)
         tightAfterBufSize = 0;
         tightAfterBuf = NULL;
     }
-    if (j) tjDestroy(j);
+	if (j) {
+		tjDestroy(j);
+		/* Set freed resource handle to 0! */
+		j = 0;
+	}
 }
 
 
@@ -559,7 +563,7 @@ ExtendSolidArea(rfbClientPtr cl,
 /*
  * Check if a rectangle is all of the same color. If needSameColor is
  * set to non-zero, then also check that its color equals to the
- * *colorPtr value. The result is 1 if the test is successfull, and in
+ * *colorPtr value. The result is 1 if the test is successful, and in
  * that case new color will be stored in *colorPtr.
  */
 

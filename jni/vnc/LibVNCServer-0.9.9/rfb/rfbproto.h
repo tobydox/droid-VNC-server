@@ -60,17 +60,17 @@
  *      messages have to be explained by comments.
  */
 
+#include <stdint.h>
 
 #if defined(WIN32) && !defined(__MINGW32__)
 #define LIBVNCSERVER_WORDS_BIGENDIAN
 #define rfbBool int
 #include <sys/timeb.h>
-#include <winsock.h>
+#include <winsock2.h>
 #undef SOCKET
 #define SOCKET int
 #else
 #include <rfb/rfbconfig.h>
-#include <rfb/rfbint.h>
 #endif
 
 #ifdef LIBVNCSERVER_HAVE_LIBZ
@@ -81,10 +81,11 @@
 #endif
 #endif
 
-/* some autotool versions do not properly prefix
-   WORDS_BIGENDIAN, so do that manually */
-#ifdef WORDS_BIGENDIAN
-#define LIBVNCSERVER_WORDS_BIGENDIAN
+#if LIBVNCSERVER_HAVE_ENDIAN_H
+# include <endian.h>
+# if __BYTE_ORDER == __BIG_ENDIAN
+#  define LIBVNCSERVER_WORDS_BIGENDIAN 1
+# endif
 #endif
 
 /* MS compilers don't have strncasecmp */
@@ -92,8 +93,8 @@
 #define strncasecmp _strnicmp
 #endif
 
+#define rfbMax(a,b) (((a)>(b))?(a):(b))
 #if !defined(WIN32) || defined(__MINGW32__)
-#define max(a,b) (((a)>(b))?(a):(b))
 #ifdef LIBVNCSERVER_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -119,7 +120,7 @@ typedef uint32_t in_addr_t;
 #define                INADDR_NONE     ((in_addr_t) 0xffffffff)
 #endif
 
-#define MAX_ENCODINGS 21
+#define MAX_ENCODINGS 64
 
 /*****************************************************************************
  *
@@ -441,6 +442,8 @@ typedef struct {
 #define rfbEncodingUltra 9
 #define rfbEncodingZRLE 16
 #define rfbEncodingZYWRLE 17
+
+#define rfbEncodingH264               0x48323634
 
 /* Cache & XOR-Zlib - rdv@2002 */
 #define rfbEncodingCache                 0xFFFF0000
@@ -1063,7 +1066,7 @@ typedef struct _rfbFileTransferMsg {
 #define rfbRErrorCmd			0xFFFFFFFF/*  Error when a command fails on remote side (ret in "size" field) */
 
 #define sz_rfbBlockSize			8192  /*  Size of a File Transfer packet (before compression) */
-#define rfbZipDirectoryPrefix   "!UVNCDIR-\0" /*  Transfered directory are zipped in a file with this prefix. Must end with "-" */
+#define rfbZipDirectoryPrefix   "!UVNCDIR-\0" /*  Transferred directory are zipped in a file with this prefix. Must end with "-" */
 #define sz_rfbZipDirectoryPrefix 9 
 #define rfbDirPrefix			"[ "
 #define rfbDirSuffix			" ]"		
