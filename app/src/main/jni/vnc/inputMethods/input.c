@@ -339,6 +339,7 @@ void ptrEvent(int buttonMask, int x, int y, rfbClientPtr cl)
 {
 
 	static int leftClicked=0,rightClicked=0,middleClicked=0;
+	static int wheelUpClicked=0,wheelDownClicked=0;
 
 	if ( inputfd == -1 )
 		return;
@@ -399,6 +400,34 @@ void ptrEvent(int buttonMask, int x, int y, rfbClientPtr cl)
 		middleClicked=0;
 		suinput_release( inputfd,KEY_END);
 		suinput_write(inputfd, EV_SYN, SYN_REPORT, 0);
+	}
+	
+	if (buttonMask & 8) //wheel up
+	{
+		if(wheelUpClicked==0) 
+		{
+			suinput_write(inputfd, EV_REL, REL_WHEEL, 1);
+			suinput_write(inputfd, EV_SYN, SYN_REPORT, 0);
+		}
+		wheelUpClicked=1;
+	}
+	else if (wheelUpClicked)// btn released
+	{
+		wheelUpClicked=0;
+	}
+	
+	if (buttonMask & 16) //wheel down
+	{
+		if(wheelDownClicked==0) 
+		{
+			suinput_write(inputfd, EV_REL, REL_WHEEL, -1);
+			suinput_write(inputfd, EV_SYN, SYN_REPORT, 0);
+		}
+		wheelDownClicked=1;
+	}
+	else if (wheelDownClicked)// btn released
+	{
+		wheelDownClicked=0;
 	}
 }
 
