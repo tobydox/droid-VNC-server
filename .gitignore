@@ -1,4 +1,5 @@
-#app/src/main/libs/
+# release folder with app-release.apk
+app/release
 
 # Built application files
 **/build/
