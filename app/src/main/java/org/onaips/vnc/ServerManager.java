@@ -164,6 +164,7 @@ public class ServerManager extends Service {
                 OutputStream os = sh.getOutputStream();
                 writeCommand(os, permission_string);
                 writeCommand(os, server_string);
+                os.close();
             }
             else
             {
