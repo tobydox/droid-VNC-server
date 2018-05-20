@@ -97,10 +97,10 @@ int suinput_open(const char* device_name, const struct input_id* id, int width, 
 
 
     /* Configure device to handle relative x and y axis. */
-//     if (ioctl(uinput_fd, UI_SET_RELBIT, REL_X) == -1)
-//         goto err;
-//     if (ioctl(uinput_fd, UI_SET_RELBIT, REL_Y) == -1)
-//         goto err;
+     if (ioctl(uinput_fd, UI_SET_RELBIT, REL_X) == -1)
+         goto err;
+     if (ioctl(uinput_fd, UI_SET_RELBIT, REL_Y) == -1)
+         goto err;
      if (ioctl(uinput_fd, UI_SET_RELBIT, REL_WHEEL) == -1)
          goto err;
 
