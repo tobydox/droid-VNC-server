@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.onaips.vnc"
-    android:versionCode="59"
-    android:versionName="1.1RC2" >
+    package="org.onaips.vnc">
 
     <uses-sdk android:minSdkVersion="18" android:maxSdkVersion="18" android:targetSdkVersion="18"/>
 
@@ -28,7 +26,6 @@
     <application
         android:name="org.onaips.vnc.MainApplication"
         android:allowBackup="true"
-        android:debuggable="true"
         android:icon="@drawable/icon"
         android:label="droid VNC server" >
         <activity

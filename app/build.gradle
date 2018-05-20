@@ -8,6 +8,8 @@ android {
         applicationId "org.onaips.vnc"
         minSdkVersion 18
         targetSdkVersion 18
+        versionCode 60
+        versionName "1.2.0"
         compileOptions {
             sourceCompatibility JavaVersion.VERSION_1_5
             targetCompatibility JavaVersion.VERSION_1_5

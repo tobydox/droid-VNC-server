@@ -160,6 +160,7 @@ public class ServerManager extends Service {
             if (root)
             {
                 log("Running as root...");
+//                server_string = droidvncserver_exec + " -m flinger";
                 sh = Runtime.getRuntime().exec("su",null,new File(files_dir));
                 OutputStream os = sh.getOutputStream();
                 writeCommand(os, permission_string);
