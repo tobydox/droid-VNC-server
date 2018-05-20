@@ -41,7 +41,7 @@
         <item>fb</item>
         <item>gralloc</item>
         <!-- <item>adb</item> -->
-        <item>gingerbread</item>
+        <item>flinger</item>
     </string-array>
     <string-array name="sleep_strings">
         <item>On</item>
