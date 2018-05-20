@@ -270,10 +270,13 @@ public class ServerManager extends Service {
 
                     if (resp.length() > 5
                             && resp.substring(0, 6).equals("~CLIP|")) {
-                        resp = resp.substring(7, resp.length() - 1);
-                        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-
-                        clipboard.setText(resp.toString());
+                        final String resp1 = resp.substring(7, resp.length() - 1);
+                        handler.post(new Runnable() {
+                            public void run() {
+                                ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                                clipboard.setText(resp1);
+                            }
+                        });
                     } else if (resp.length() > 6
                             && resp.substring(0, 6).equals("~SHOW|")) {
                         resp = resp.substring(6, resp.length() - 1);
