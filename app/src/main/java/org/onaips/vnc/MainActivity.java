@@ -258,7 +258,7 @@ public class MainActivity extends Activity
 
     public void log(String s)
     {
-        Log.v(VNC_LOG,s);
+        Log.d(VNC_LOG,s);
     }
 
 
@@ -605,18 +605,20 @@ public class MainActivity extends Activity
 
     public static boolean hasRootPermission() {
         boolean rooted = true;
-        try {
-            File su = new File("/system/bin/su");
-            if (su.exists() == false) {
-                su = new File("/system/xbin/su");
-                if (su.exists() == false) {
-                    rooted = false;
-                }
-            }
-        } catch (Exception e) {
-            //log( "Can't obtain root - Here is what I know: "+e.getMessage());
-            rooted = false;
-        }
+        // FIXME: use a better check for SU, ie exec su command. Google on StackOverflow after all :)
+        // the check below fails on Magisk
+//        try {
+//            File su = new File("/system/bin/su");
+//            if (su.exists() == false) {
+//                su = new File("/system/xbin/su");
+//                if (su.exists() == false) {
+//                    rooted = false;
+//                }
+//            }
+//        } catch (Exception e) {
+//            //log( "Can't obtain root - Here is what I know: "+e.getMessage());
+//            rooted = false;
+//        }
 
         return rooted;
     }
