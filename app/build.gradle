@@ -19,7 +19,7 @@ android {
         }
         sourceSets {
             main {
-                jniLibs.srcDirs 'src/main/libs', 'src/main/nativeMethods/libs'
+                jniLibs.srcDirs 'src/main/jniLibs' //, 'src/main/nativeMethods/libs'
             }
         }
     }
