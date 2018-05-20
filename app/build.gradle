@@ -39,4 +39,8 @@ android {
         }
     }
 
+    lintOptions {
+        // for src/main/res/raw/self.pem - lint doesn't like private keys in runtime
+        disable 'PackagedPrivateKey'
+    }
 }
