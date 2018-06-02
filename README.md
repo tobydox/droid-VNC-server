@@ -2,7 +2,7 @@
 
 This repo forked from https://github.com/appknox/droid-VNC-server
 
-The differences with the upstreem repo are:
+The differences with the upstream repo are:
 
 1. Migrated to Android Studio 3 / Gradle 4.1
 2. Added handling for mouse wheel, in vnc server binary
