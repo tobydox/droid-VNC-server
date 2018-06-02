@@ -1,15 +1,15 @@
 # droid-vnc-server
 
-VNC server for Android, tested working with Jelly Bean till Marshmallow
+This repo forked from https://github.com/appknox/droid-VNC-server
 
-## Getting started
+The differences with the upstreem repo are:
 
-Make sure Android SDK and NDK are installed
+1. Migrated to Android Studio 3 / Gradle 4.1
+2. Added handling for mouse wheel, in vnc server binary
+3. Compiled for API 25, flinger library only
 
-    bash build.sh -wa API_LEVEL
+This was made for a custom LineageOS rom for particular device (for Xiaomi Redmi Note 4 / mido) with droidVNC app preinstalled, so I didn't need to support other Android devices. It may work, or not work, for your case.
 
-Specify API level with `-a`
+If you need droidVNC port/customization for your device, or any custom Android ROM / firmware - feel you free to contact me at gmixaz at gmail com. My profile at upwork: https://www.upwork.com/o/profiles/users/_~015014cada179b4e70/
 
-Use `-w` flag to build the wrapper libs; AOSP source is required at `../aosp`
-
-Wrapper libs for API 19 to 25 have been prebuilt in [](nativeMethods/libs/armeabi-v7a/) and should work out of the box
+## for other (previous) README info see the upstream repos
