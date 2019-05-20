@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/droid-VNC-server.iml" filepath="$PROJECT_DIR$/droid-VNC-server.iml" />
       <module fileurl="file://$PROJECT_DIR$/droid-VNC-server_gradle.iml" filepath="$PROJECT_DIR$/droid-VNC-server_gradle.iml" />
     </modules>
   </component>

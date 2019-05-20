@@ -2,14 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 19
-    buildToolsVersion "27.0.3"
 
-    externalNativeBuild {
-        ndkBuild {
-            path "src/main/jni/Android.mk"
-        }
-    }
-    
+//    externalNativeBuild {
+//        ndkBuild {
+//            path "src/main/jni/Android.mk"
+//        }
+//    }
+//
     defaultConfig {
         applicationId "org.onaips.vnc"
         minSdkVersion 18
@@ -42,11 +41,14 @@ android {
         }
     }
 
+    flavorDimensions "jni"
     productFlavors {
         buildNdk {
-            externalNativeBuild.ndkBuild.path "src/main/jni/Android.mk"
+            dimension "jni"
+//            externalNativeBuild.ndkBuild.path "src/main/jni/Android.mk"
         }
         prebuiltNdk {
+            dimension "jni"
 //            sourceSets.main.jniLibs.srcDirs = 'src/main/jniLibs'
         }
     }
