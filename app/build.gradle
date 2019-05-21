@@ -3,12 +3,12 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 19
 
-//    externalNativeBuild {
-//        ndkBuild {
-//            path "src/main/jni/Android.mk"
-//        }
-//    }
-//
+    externalNativeBuild {
+        ndkBuild {
+            path "src/main/jni/Android.mk"
+        }
+    }
+
     defaultConfig {
         applicationId "org.onaips.vnc"
         minSdkVersion 18
