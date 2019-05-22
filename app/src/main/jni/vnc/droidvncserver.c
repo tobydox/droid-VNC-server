@@ -182,10 +182,11 @@ void initVncServer(int argc, char **argv)
 		vncscr->passwordCheck = rfbCheckPasswordByList;
 	}
 
+#ifdef LIBVNCSERVER_WITH_WEBSOCKETS
 	vncscr->httpDir = "webclients/";
 //	vncscr->httpEnableProxyConnect = TRUE;
 	vncscr->sslcertfile = "self.pem";
-
+#endif
 	vncscr->serverFormat.redShift = screenformat.redShift;
 	vncscr->serverFormat.greenShift = screenformat.greenShift;
 	vncscr->serverFormat.blueShift = screenformat.blueShift;
