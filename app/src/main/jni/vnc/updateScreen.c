@@ -192,11 +192,6 @@ void FUNCTION(void)
 		rfbMarkRectAsModified(vncscr, 0, 0, screenformat.width, screenformat.height);
 	}
 
-    if (method == FLINGER) {
-        // Only flinger creates a new image array (for now)
-        // Other methods do not so don't overzealously free mem.
-        free(b);
-    }
 	if (display_rotate_180)
 		rotation=r;
 }

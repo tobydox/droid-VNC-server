@@ -32,12 +32,16 @@
 
 using namespace android;
 
-static uint32_t DEFAULT_DISPLAY_ID = ISurfaceComposer::eDisplayIdMain;
+static sp<IBinder> display;
+
 static const int COMPONENT_YUV = 0xFF;
-int32_t displayId = DEFAULT_DISPLAY_ID;
-size_t Bpp = 32;
-sp<IBinder> display = SurfaceComposerClient::getBuiltInDisplay(displayId);
-ScreenshotClient *screenshotClient=NULL;
+static size_t Bpp = 32;
+
+static ScreenshotClient *screenshotClient=NULL;
+
+/* Additional buffer when screen buffer is bigger than screen size. */
+/* NULL if the sizes are equival, so the flinger frame buffer is used.  */
+static void *new_base = NULL;
 
 struct PixelFormatInformation {
     enum {
@@ -209,18 +213,39 @@ extern "C" screenFormat getscreenformat_flinger()
 
 extern "C" int init_flinger()
 {
+    uint32_t width, h, stride;
     int errcode;
-
+    uint32_t DEFAULT_DISPLAY_ID = ISurfaceComposer::eDisplayIdMain;
+    int32_t displayId = DEFAULT_DISPLAY_ID;
+    
+    display = SurfaceComposerClient::getBuiltInDisplay(displayId);
+    
     L("--Initializing JellyBean access method--\n");
 
     screenshotClient = new ScreenshotClient();
     L("ScreenFormat: %d\n", screenshotClient->getFormat());
+
+    width = screenshotClient->getWidth();
+    stride = screenshotClient->getStride();
+
+    // allocate additional frame buffer if the source one is not continuous
+    if (stride > width) {
+        new_base = malloc(w * h * Bpp);
+        if(new_base == NULL) {
+            close_flinger();
+            return -1;
+        }
+    }
+
     errcode = screenshotClient->update(display, Rect(), false);
     L("Screenshot client updated its display on init.\n");
+
     if (display != NULL && errcode == NO_ERROR)
         return 0;
-    else
-        return -1;
+
+    // error
+    close_flinger();
+    return -1;
 }
 
 extern "C" unsigned int *checkfb_flinger()
@@ -232,6 +257,7 @@ extern "C" unsigned int *checkfb_flinger()
 
 extern "C" unsigned int *readfb_flinger()
 {
+    L("readfb_flinger start. ");
     screenshotClient->update(display, Rect(), false);
     void const* base = 0;
     uint32_t w, h, s;
@@ -244,7 +270,6 @@ extern "C" unsigned int *readfb_flinger()
     if (s > w) {
         // If stride is greater than width, then the image is non-contiguous in memory
         // so we have copy it into a new array such that it is
-        void *new_base = malloc(w * h * Bpp);
         void *tmp_ptr = new_base;
 
         for (size_t y = 0; y < h; y++) {
@@ -260,6 +285,13 @@ extern "C" unsigned int *readfb_flinger()
 
 extern "C" void close_flinger()
 {
-    display = nullptr;
-    delete screenshotClient;
+    display = NULL;
+    if(screenshotClient != NULL) {
+        delete screenshotClient;
+        screenshotClient = NULL;
+    }
+    if(new_base != NULL) {
+        free(new_base);
+        new_base = NULL;
+    }
 }

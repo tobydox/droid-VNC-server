@@ -38,6 +38,8 @@ int sendMsgToGui(char *buffer)
   unsigned int length;
   struct sockaddr_in server;
 
+  L("sendMsgToGui: %s",buffer);
+  
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) perror("socket");
 
@@ -105,7 +107,7 @@ void *handle_connections()
     n = recvfrom(hServerSocket,pBuffer,BUFFER_SIZE,0,(struct sockaddr *)&from,&fromlen);
     if (n < 0) perror("recvfrom");
 
-    //L("Recebido: %s\n",pBuffer);
+    L("Recebido: %s\n",pBuffer);
 
     if (strstr(pBuffer,"~PING|")!=NULL)
     {
@@ -115,7 +117,7 @@ void *handle_connections()
       if (n  < 0) perror("sendto");
     }
     else if (strstr(pBuffer,"~KILL|")!=NULL)
-    close_app();
+      close_app();
   }
 }
 
