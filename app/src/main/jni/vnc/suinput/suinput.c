@@ -147,8 +147,7 @@ int suinput_open(const char* device_name, const struct input_id* id, int width, 
   However, my experiments show that the device is not ready to process input
   events even after a device creation event is received from udev.
   */
-
-    //sleep(2);
+    sleep(2);
 
     return uinput_fd;
 
