@@ -181,6 +181,8 @@ status_t getPixelFormatInformation(PixelFormat format, PixelFormatInformation* i
     return NO_ERROR;
 }
 
+static screenFormat format;
+
 extern "C" screenFormat getscreenformat_flinger()
 {
     //get format on PixelFormat struct
@@ -188,8 +190,6 @@ extern "C" screenFormat getscreenformat_flinger()
 
     PixelFormatInformation pf;
     getPixelFormatInformation(f,&pf);
-
-    screenFormat format;
 
     Bpp = bytesPerPixel(f);
     L("Bpp set to %d\n", Bpp);
@@ -213,12 +213,10 @@ extern "C" screenFormat getscreenformat_flinger()
 
 extern "C" int init_flinger()
 {
-    uint32_t width, h, stride;
+    uint32_t width, height, stride;
     int errcode;
-    uint32_t DEFAULT_DISPLAY_ID = ISurfaceComposer::eDisplayIdMain;
-    int32_t displayId = DEFAULT_DISPLAY_ID;
     
-    display = SurfaceComposerClient::getBuiltInDisplay(displayId);
+    display = SurfaceComposerClient::getBuiltInDisplay(ISurfaceComposer::eDisplayIdMain);
     
     L("--Initializing JellyBean access method--\n");
 
@@ -226,11 +224,12 @@ extern "C" int init_flinger()
     L("ScreenFormat: %d\n", screenshotClient->getFormat());
 
     width = screenshotClient->getWidth();
+    height = screenshotClient->getHeight();
     stride = screenshotClient->getStride();
 
     // allocate additional frame buffer if the source one is not continuous
     if (stride > width) {
-        new_base = malloc(w * h * Bpp);
+        new_base = malloc(width * height* Bpp);
         if(new_base == NULL) {
             close_flinger();
             return -1;
@@ -257,7 +256,6 @@ extern "C" unsigned int *checkfb_flinger()
 
 extern "C" unsigned int *readfb_flinger()
 {
-    L("readfb_flinger start. ");
     screenshotClient->update(display, Rect(), false);
     void const* base = 0;
     uint32_t w, h, s;
@@ -267,9 +265,9 @@ extern "C" unsigned int *readfb_flinger()
     h = screenshotClient->getHeight();
     s = screenshotClient->getStride();
 
+    // If stride is greater than width, then the image is non-contiguous in memory
+    // so we have copy it into a new array such that it is
     if (s > w) {
-        // If stride is greater than width, then the image is non-contiguous in memory
-        // so we have copy it into a new array such that it is
         void *tmp_ptr = new_base;
 
         for (size_t y = 0; y < h; y++) {
