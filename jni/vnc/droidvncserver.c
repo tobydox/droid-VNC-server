@@ -271,6 +271,16 @@ void close_app()
 	cleanupInput();
 	sendServerStopped();
 	unbindIPCserver();
+
+	if(rhost != NULL) {
+		free(rhost);
+		rhost = NULL;
+	}
+	if(repeaterHost != NULL) {
+		free(repeaterHost);
+		repeaterHost = NULL;
+	}
+
 	exit(0); /* normal exit status */
 }
 
