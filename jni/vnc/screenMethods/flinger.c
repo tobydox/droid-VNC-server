@@ -19,6 +19,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <dlfcn.h>
 
+#ifdef NO_LIB_PATH
+#include <libgen.h>
+#endif
+
 #include "flinger.h"
 #include "common.h"
 
@@ -31,10 +35,21 @@ getscreenformat_fn_type getscreenformat_flinger = NULL;
 
 int initFlinger(void)
 {
-    L("--Loading flinger native lib--\n");
     int i,len;
     char lib_name[64];
+
+#ifdef NO_LIB_PATH
+    ssize_t count = readlink("/proc/self/exe", lib_name, PATH_MAX);
+    const char *path;
+    if (count != -1) {
+        path = dirname(lib_name);
+    }
+    sprintf(lib_name, "%s/libdvnc_flinger_sdk.so",path);
+#else
     sprintf(lib_name, DVNC_LIB_PATH "/libdvnc_flinger_sdk.so");
+#endif
+
+    L("--Loading flinger native lib %s--\n",lib_name);
 
     // 1. Open lib
     flinger_lib = dlopen(lib_name, RTLD_NOW);

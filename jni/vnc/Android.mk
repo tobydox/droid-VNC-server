@@ -45,7 +45,7 @@ LOCAL_CFLAGS  +=  -Wall \
 									-DLIBVNCSERVER_HAVE_LIBJPEG
 
 # do not use app package folders
-LOCAL_CFLAGS  +=  -DNOAPP
+LOCAL_CFLAGS  +=  -DNOAPP -DNO_LIB_PATH
 
 LOCAL_LDLIBS +=  -llog -lz -ldl 
 
