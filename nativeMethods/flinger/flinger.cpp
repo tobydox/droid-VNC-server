@@ -17,6 +17,17 @@
      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
      */
 
+#if ANDROID_API_LEVEL >= 28
+#define USE_GRAPHIC_BUFFER_API
+#endif
+
+#if ANDROID_API_LEVEL >= 29
+#include <android/fdsan.h>
+uint64_t android_fdsan_create_owner_tag(enum android_fdsan_owner_type type, uint64_t tag) __INTRODUCED_IN(29) __attribute__((__weak__));
+void android_fdsan_exchange_owner_tag(int fd, uint64_t expected_tag, uint64_t new_tag) __INTRODUCED_IN(29) __attribute__((__weak__));
+int android_fdsan_close_with_tag(int fd, uint64_t tag) __INTRODUCED_IN(29) __attribute__((__weak__));
+#endif
+
 #include <fcntl.h>
 
 #include "flinger.h"
@@ -30,6 +41,8 @@
 #include <gui/ISurfaceComposer.h>
 #include <gui/SurfaceComposerClient.h>
 
+#include <ui/DisplayInfo.h>
+
 using namespace android;
 
 static sp<IBinder> display;
@@ -37,11 +50,52 @@ static sp<IBinder> display;
 static const int COMPONENT_YUV = 0xFF;
 static size_t Bpp = 32;
 
+#ifndef USE_GRAPHIC_BUFFER_API
 static ScreenshotClient *screenshotClient=NULL;
+#endif
 
 /* Additional buffer when screen buffer is bigger than screen size. */
 /* NULL if the sizes are equival, so the flinger frame buffer is used.  */
 static void *new_base = NULL;
+
+#ifdef USE_GRAPHIC_BUFFER_API
+static uint32_t captureOrientation()
+{
+    Vector<DisplayInfo> configs;
+    SurfaceComposerClient::getDisplayConfigs(display, &configs);
+    int activeConfig = SurfaceComposerClient::getActiveConfig(display);
+    if( static_cast<size_t>(activeConfig) >= configs.size() )
+    {
+        L("Active config %d not inside configs (size %zu)\n", activeConfig, configs.size());
+        return 0;
+    }
+    const auto displayOrientation = configs[activeConfig].orientation;
+
+    static const uint32_t ORIENTATION_MAP[] = {
+        ISurfaceComposer::eRotateNone, // 0 == DISPLAY_ORIENTATION_0
+        ISurfaceComposer::eRotate270, // 1 == DISPLAY_ORIENTATION_90
+        ISurfaceComposer::eRotate180, // 2 == DISPLAY_ORIENTATION_180
+        ISurfaceComposer::eRotate90, // 3 == DISPLAY_ORIENTATION_270
+    };
+
+    return ORIENTATION_MAP[displayOrientation];
+}
+
+static sp<GraphicBuffer> capture()
+{
+    sp<GraphicBuffer> outBuffer;
+
+    status_t result = ScreenshotClient::capture( display, Rect(), 0, 0, INT32_MIN, INT32_MAX, false, captureOrientation(), &outBuffer );
+
+    if( result != NO_ERROR )
+    {
+        L("ScreenshotClient::capture() failed\n");
+        return nullptr;
+    }
+
+    return outBuffer;
+}
+#endif
 
 struct PixelFormatInformation {
     enum {
@@ -185,8 +239,24 @@ static screenFormat format;
 
 extern "C" screenFormat getscreenformat_flinger()
 {
+#ifdef USE_GRAPHIC_BUFFER_API
+    auto captureBuffer = capture();
+
+    if( captureBuffer == nullptr )
+    {
+        L( "getscreenformat_flinger(): capture() failed\n");
+        return format;
+    }
+
+    const PixelFormat f = captureBuffer->getPixelFormat();
+    const auto width = captureBuffer->getWidth();
+    const auto height = captureBuffer->getHeight();
+#else
     //get format on PixelFormat struct
     PixelFormat f=screenshotClient->getFormat();
+    const auto width = screenshotClient->getWidth();
+    const auto height = screenshotClient->getHeight();
+#endif
 
     PixelFormatInformation pf;
     getPixelFormatInformation(f,&pf);
@@ -195,8 +265,8 @@ extern "C" screenFormat getscreenformat_flinger()
     L("Bpp set to %d\n", Bpp);
 
     format.bitsPerPixel = bitsPerPixel(f);
-    format.width        = screenshotClient->getWidth();
-    format.height       = screenshotClient->getHeight();
+    format.width        = width;
+    format.height       = height;
     format.size         = format.bitsPerPixel*format.width*format.height/CHAR_BIT;
     format.redShift     = pf.l_red;
     format.redMax       = pf.h_red - pf.l_red;
@@ -218,8 +288,21 @@ extern "C" int init_flinger()
     
     display = SurfaceComposerClient::getBuiltInDisplay(ISurfaceComposer::eDisplayIdMain);
     
-    L("--Initializing JellyBean access method--\n");
+    L("--Initializing Flinger --\n");
 
+#ifdef USE_GRAPHIC_BUFFER_API
+    auto captureBuffer = capture();
+
+    if( captureBuffer == nullptr )
+    {
+        L( "init_flinger(): capture() failed\n");
+        return -1;
+    }
+
+    width = captureBuffer->getWidth();
+    height = captureBuffer->getHeight();
+    stride = captureBuffer->getStride();
+#else
     screenshotClient = new ScreenshotClient();
     L("ScreenFormat: %d\n", screenshotClient->getFormat());
 
@@ -238,6 +321,7 @@ extern "C" int init_flinger()
 
     errcode = screenshotClient->update(display, Rect(), false);
     L("Screenshot client updated its display on init.\n");
+#endif
 
     if (display != NULL && errcode == NO_ERROR)
         return 0;
@@ -249,21 +333,59 @@ extern "C" int init_flinger()
 
 extern "C" unsigned int *checkfb_flinger()
 {
+#ifdef USE_GRAPHIC_BUFFER_API
+    auto captureBuffer = capture();
+
+    if( captureBuffer == nullptr )
+    {
+        L( "checkfb_flinger(): capture() failed\n" );
+        return nullptr;
+    }
+
+    void* base = nullptr;
+    const auto result = captureBuffer->lock(GraphicBuffer::USAGE_SW_READ_OFTEN, &base);
+    if( base == nullptr )
+    {
+        L( "checkfb_flinger(): GraphicBuffer::lock() failed\n" );
+    }
+#else
     screenshotClient->update(display, Rect(), false);
     void const* base = screenshotClient->getPixels();
+#endif
     return (unsigned int*)base;
 }
 
 extern "C" unsigned int *readfb_flinger()
 {
-    screenshotClient->update(display, Rect(), false);
-    void const* base = 0;
     uint32_t w, h, s;
 
-    base = screenshotClient->getPixels();
+#ifdef USE_GRAPHIC_BUFFER_API
+    auto captureBuffer = capture();
+
+    if( captureBuffer == nullptr )
+    {
+        L( "readfb_flinger(): capture() failed\n" );
+        return nullptr;
+    }
+
+    void* base = nullptr;
+    const auto result = captureBuffer->lock( GraphicBuffer::USAGE_SW_READ_OFTEN, &base );
+    if( base == nullptr )
+    {
+        L("readfb_flinger(): GraphicBuffer::lock() failed\n");
+        return nullptr;
+    }
+
+    w = captureBuffer->getWidth();
+    h = captureBuffer->getHeight();
+    s = captureBuffer->getStride();
+#else
+    screenshotClient->update(display, Rect(), false);
+    auto base = screenshotClient->getPixels();
     w = screenshotClient->getWidth();
     h = screenshotClient->getHeight();
     s = screenshotClient->getStride();
+#endif
 
     // If stride is greater than width, then the image is non-contiguous in memory
     // so we have copy it into a new array such that it is
@@ -284,10 +406,12 @@ extern "C" unsigned int *readfb_flinger()
 extern "C" void close_flinger()
 {
     display = NULL;
+#ifndef USE_GRAPHIC_BUFFER_API
     if(screenshotClient != NULL) {
         delete screenshotClient;
         screenshotClient = NULL;
     }
+#endif
     if(new_base != NULL) {
         free(new_base);
         new_base = NULL;
