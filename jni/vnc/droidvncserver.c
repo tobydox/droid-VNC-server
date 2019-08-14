@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "input.h"
 #include "flinger.h"
 #include "gralloc.h"
+#include "mediaprojection.h"
 
 #include "libvncserver/scale.h"
 #include "rfb/rfb.h"
@@ -64,7 +65,7 @@ rfbBool RepeaterGone = FALSE;
 
 void (*update_screen)(void)=NULL;
 
-enum method_type {AUTO,FRAMEBUFFER,ADB,GRALLOC,FLINGER};
+enum method_type {AUTO,MEDIAPROJECTION,FRAMEBUFFER,ADB,GRALLOC,FLINGER};
 enum method_type method=AUTO;
 
 #define PIXEL_TO_VIRTUALPIXEL_FB(i,j) ((j+scrinfo.yoffset)*scrinfo.xres_virtual+i+scrinfo.xoffset)
@@ -267,6 +268,8 @@ void close_app()
 		closeGralloc();
 	else if (method == FLINGER)
 		closeFlinger();
+	else if (method == MEDIAPROJECTION)
+		closeMediaProjection();
 
 	cleanupInput();
 	sendServerStopped();
@@ -338,7 +341,10 @@ void initGrabberMethod()
 {
 	if (method == AUTO) {
 		L("No grabber method selected, auto-detecting...\n");
-		if (initFlinger() != -1)
+		if (initMediaProjection() != -1) {
+			method = MEDIAPROJECTION;
+		}
+		else if (initFlinger() != -1)
 			method = FLINGER;
 		else if (initGralloc()!=-1)
 			method = GRALLOC;

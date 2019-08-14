@@ -43,6 +43,8 @@ void FUNCTION(void)
 		b = (OUT_T*) readBufferGralloc();
 	else if (method==FLINGER)
 		b = (OUT_T*) readBufferFlinger();
+	else if (method==MEDIAPROJECTION)
+		b = (OUT_T*) readBufferMediaProjection();
 
 	//a = (OUT_T*)cmpbuf;
 
